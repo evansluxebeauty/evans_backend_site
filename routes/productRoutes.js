@@ -57,7 +57,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', protectAdmin, upload.array('images', 5), async (req, res) => {
   try {
     const { name, price, discountPercentage, description, category, brand, stock, isActive, benefits } = req.body;
-    
+
     const imageUrls = req.files ? req.files.map(file => file.path) : [];
 
     const product = new Product({
@@ -98,7 +98,7 @@ router.put('/:id', protectAdmin, upload.array('images', 5), async (req, res) => 
       product.category = category || product.category;
       product.brand = brand || product.brand;
       product.stock = stock !== undefined ? stock : product.stock;
-      
+
       if (benefits) {
         try {
           product.benefits = typeof benefits === 'string' ? JSON.parse(benefits) : benefits;

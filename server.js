@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import compression from 'compression';
 import connectDB from './config/db.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
@@ -53,6 +54,7 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use(compression());
 app.use(express.json());
 
 // Basic Route
@@ -61,7 +63,13 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.use('/api/products', productRoutes);
+app.use('/api/products', (req, res, next) => {
+  // Cache response for 5 minutes (300 seconds) for faster loading on the user side
+  if (req.method === 'GET' && !req.path.includes('/admin')) {
+    res.set('Cache-Control', 'public, max-age=300');
+  }
+  next();
+}, productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);

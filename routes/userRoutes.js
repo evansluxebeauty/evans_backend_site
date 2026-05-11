@@ -349,16 +349,35 @@ router.post('/forgot-password', async (req, res) => {
 // @route   POST /api/users/verify-otp
 // @access  Public
 router.post('/verify-otp', async (req, res) => {
-  const { mobile, otp } = req.body;
+  let { mobile, otp } = req.body;
+  if (!mobile || !otp) return res.status(400).json({ message: 'Mobile and OTP are required' });
+
+  // Normalize mobile
+  mobile = mobile.replace(/\s+/g, '').replace(/[-()]/g, '');
+
   try {
-    const validOTP = await OTP.findOne({ mobile, otp });
+    // Find user first to get the canonical mobile number
+    const user = await User.findOne({ 
+      $or: [
+        { mobile: mobile },
+        { mobile: mobile.startsWith('+91') ? mobile.slice(3) : mobile },
+        { mobile: mobile.startsWith('+') ? mobile : `+91${mobile}` }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this mobile number' });
+    }
+
+    const validOTP = await OTP.findOne({ mobile: user.mobile, otp });
     if (validOTP) {
       res.json({ message: 'OTP verified successfully', success: true });
     } else {
       res.status(400).json({ message: 'Invalid or expired OTP' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('[VERIFY OTP ERROR]:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 
@@ -366,24 +385,41 @@ router.post('/verify-otp', async (req, res) => {
 // @route   POST /api/users/reset-password
 // @access  Public
 router.post('/reset-password', async (req, res) => {
-  const { mobile, otp, newPassword } = req.body;
+  let { mobile, otp, newPassword } = req.body;
+  if (!mobile || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Mobile, OTP, and new password are required' });
+  }
+
+  // Normalize mobile
+  mobile = mobile.replace(/\s+/g, '').replace(/[-()]/g, '');
+
   try {
-    const validOTP = await OTP.findOne({ mobile, otp });
-    if (!validOTP) {
-      return res.status(400).json({ message: 'Session expired. Please request a new OTP.' });
+    // Find user first to get the canonical mobile number
+    const user = await User.findOne({ 
+      $or: [
+        { mobile: mobile },
+        { mobile: mobile.startsWith('+91') ? mobile.slice(3) : mobile },
+        { mobile: mobile.startsWith('+') ? mobile : `+91${mobile}` }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = await User.findOne({ mobile });
-    if (user) {
-      user.password = newPassword;
-      await user.save();
-      await OTP.deleteMany({ mobile }); // Cleanup
-      res.json({ message: 'Password reset successfully. Please login with your new password.' });
-    } else {
-      res.status(404).json({ message: 'User not found' });
+    const validOTP = await OTP.findOne({ mobile: user.mobile, otp });
+    if (!validOTP) {
+      return res.status(400).json({ message: 'Session expired or invalid OTP. Please request a new OTP.' });
     }
+
+    user.password = newPassword;
+    // Bypass validation to avoid errors if the user profile is missing required fields like 'email'
+    await user.save({ validateBeforeSave: false });
+    await OTP.deleteMany({ mobile: user.mobile }); // Cleanup
+    res.json({ message: 'Password reset successfully. Please login with your new password.' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('[RESET PASSWORD ERROR]:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 
