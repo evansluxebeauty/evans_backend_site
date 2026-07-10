@@ -65,7 +65,10 @@ router.post('/', protect, async (req, res) => {
       items,
       totalAmount: calculatedTotal, // Use calculated total instead of frontend total
       shippingAddress,
-      paymentStatus: paymentStatus || 'pending'
+      paymentStatus: paymentStatus || 'pending',
+      razorpayOrderId: req.body.razorpayOrderId,
+      razorpayPaymentId: req.body.razorpayPaymentId,
+      razorpaySignature: req.body.razorpaySignature
     });
 
     const createdOrder = await order.save();

@@ -8,6 +8,8 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +41,16 @@ app.use(cors({
 
     // Allow any localhost port during development
     if (normalizedOrigin.startsWith('http://localhost:')) return callback(null, true);
+
+    // Allow local network IPs for mobile testing
+    if (
+      normalizedOrigin.startsWith('http://192.168.') || 
+      normalizedOrigin.startsWith('http://10.') || 
+      normalizedOrigin.startsWith('http://172.') || 
+      normalizedOrigin.startsWith('http://100.')
+    ) {
+      return callback(null, true);
+    }
 
     const isAllowed = allowedOrigins.some(o => {
       const normalizedO = o.replace(/\/$/, '');
@@ -74,6 +86,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/settings', settingsRoutes);
 
 const PORT = process.env.PORT || 5001;
 

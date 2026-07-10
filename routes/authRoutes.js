@@ -45,17 +45,17 @@ export const protectAdmin = (req, res, next) => {
       const decoded = jwt.verify(token, JWT_SECRET);
       
       if (decoded.role === 'admin') {
-        next();
+        return next();
       } else {
-        res.status(401).json({ message: 'Not authorized as an admin' });
+        return res.status(401).json({ message: 'Not authorized as an admin' });
       }
     } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
 

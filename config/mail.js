@@ -1,12 +1,15 @@
 import nodemailer from 'nodemailer';
 
 const sendOrderEmail = async (order, user, type = 'customer') => {
+  const emailUser = process.env.EMAIL_USER || process.env.SMTP_EMAIL;
+  const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASSWORD;
+
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: emailUser,
+        pass: emailPass,
       },
     });
 
@@ -123,8 +126,8 @@ const sendOrderEmail = async (order, user, type = 'customer') => {
     `;
 
     const mailOptions = {
-      from: `"Evans Luxe Beauty" <${process.env.EMAIL_USER}>`,
-      to: type === 'customer' ? user.email : (process.env.ADMIN_EMAIL || process.env.EMAIL_USER),
+      from: `"Evans Luxe Beauty" <${emailUser}>`,
+      to: type === 'customer' ? user.email : (process.env.ADMIN_EMAIL || emailUser),
       subject: type === 'customer' 
         ? `✨ Order Confirmed: Your Evans Luxe Essentials are on the way! (#${order._id.toString().slice(-6).toUpperCase()})` 
         : `🚨 NEW ORDER: ₹${order.totalAmount.toLocaleString('en-IN')} from ${user.username}`,
