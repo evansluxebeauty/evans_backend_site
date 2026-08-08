@@ -29,14 +29,14 @@ router.post('/', protect, async (req, res) => {
     for (const item of items) {
       const product = await Product.findOneAndUpdate(
         { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } },
+        { $inc: { stock: -item.quantity, soldCount: item.quantity } },
         { new: true }
       );
 
       if (!product) {
-        // Restore stock for all previously deducted items
+        // Restore stock and soldCount for all previously deducted items
         for (const d of deducted) {
-          await Product.findByIdAndUpdate(d.product, { $inc: { stock: d.quantity } });
+          await Product.findByIdAndUpdate(d.product, { $inc: { stock: d.quantity, soldCount: -d.quantity } });
         }
         const p = await Product.findById(item.product);
         const available = p ? p.stock : 0;
@@ -51,10 +51,6 @@ router.post('/', protect, async (req, res) => {
       const dbPrice = product.price * (1 - (product.discountPercentage || 0) / 100);
       item.price = dbPrice; // Update item price to DB price
       calculatedTotal += dbPrice * item.quantity;
-
-      // Increment soldCount
-      product.soldCount += item.quantity;
-      await product.save();
 
       deducted.push({ product: item.product, quantity: item.quantity });
     }
@@ -151,7 +147,7 @@ router.put('/:id/status', protectAdmin, async (req, res) => {
       for (const item of order.items) {
         await Product.findByIdAndUpdate(
           item.product,
-          { $inc: { stock: item.quantity } }
+          { $inc: { stock: item.quantity, soldCount: -item.quantity } }
         );
       }
     }
@@ -162,13 +158,13 @@ router.put('/:id/status', protectAdmin, async (req, res) => {
       for (const item of order.items) {
         const updated = await Product.findOneAndUpdate(
           { _id: item.product, stock: { $gte: item.quantity } },
-          { $inc: { stock: -item.quantity } },
+          { $inc: { stock: -item.quantity, soldCount: item.quantity } },
           { new: true }
         );
         if (!updated) {
           // Rollback re-deductions already done
           for (const d of reDeducted) {
-            await Product.findByIdAndUpdate(d.product, { $inc: { stock: d.quantity } });
+            await Product.findByIdAndUpdate(d.product, { $inc: { stock: d.quantity, soldCount: -d.quantity } });
           }
           const product = await Product.findById(item.product);
           return res.status(400).json({

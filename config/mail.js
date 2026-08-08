@@ -73,11 +73,6 @@ const sendOrderEmail = async (order, user, type = 'customer') => {
               </p>
             </div>
 
-            <!-- Quote Section -->
-            <div style="text-align: center; margin-bottom: 35px; padding: 25px; font-style: italic; color: ${accentColor}; font-family: Georgia, serif; font-size: 15px; line-height: 1.6; border-top: 1px solid #F0F0F0; border-bottom: 1px solid #F0F0F0;">
-              "Invest in your skin. It is going to represent you for a very long time."
-            </div>
-
             <div style="text-align: center;">
               <a href="https://evanscom.vercel.app/profile" style="display: inline-block; background: ${primaryColor}; color: white; padding: 18px 35px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 10px 20px rgba(90, 42, 108, 0.2);">Track Your Order</a>
             </div>
@@ -87,7 +82,7 @@ const sendOrderEmail = async (order, user, type = 'customer') => {
           <div style="background: #FAFAFA; padding: 40px; text-align: center; color: #999;">
             <p style="font-size: 14px; color: ${primaryColor}; font-weight: 700; margin-bottom: 10px;">Evans Luxe Beauty</p>
             <p style="font-size: 12px; line-height: 1.6; margin: 0;">Radiant Skin, Naturally. <br> If you have any questions, reply to this email or contact <br> <strong>support@evansluxe.com</strong></p>
-            <div style="margin-top: 25px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px;">&copy; ${new Date().getFullYear()} Evans Luxe. All rights reserved.</div>
+            <div style="margin-top: 25px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px;">&copy; 2026 Evans Luxe. All rights reserved.</div>
           </div>
         </div>
       </div>
@@ -124,12 +119,7 @@ const sendOrderEmail = async (order, user, type = 'customer') => {
           </div>
 
           <div style="text-align: center; margin-top: 30px;">
-             <a href="https://admin-evans.vercel.app/orders" style="display: block; background: ${primaryColor}; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 14px;">Process Order in Dashboard</a>
-          </div>
-          
-          <!-- Admin Quote -->
-          <div style="margin-top: 30px; text-align: center; font-style: italic; color: #888; font-family: Georgia, serif; font-size: 13px; line-height: 1.5;">
-            "Great things in business are never done by one person. They're done by a team of people."
+             <a href="https://admin-evans.vercel.app/orders/${order._id}" style="display: block; background: ${primaryColor}; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 14px;">Process Order in Dashboard</a>
           </div>
         </div>
       </div>
