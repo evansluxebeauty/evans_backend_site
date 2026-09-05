@@ -1,7 +1,9 @@
+import http from 'http';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import compression from 'compression';
+import { Server } from 'socket.io';
 import connectDB from './config/db.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
@@ -18,6 +20,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
 
 // Middleware
 const allowedOrigins = [
@@ -31,18 +34,52 @@ const allowedOrigins = [
   'http://localhost:3001',
 ].filter(Boolean);
 
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (normalizedOrigin.startsWith('http://localhost:')) return callback(null, true);
+      if (
+        normalizedOrigin.startsWith('http://192.168.') || 
+        normalizedOrigin.startsWith('http://10.') || 
+        normalizedOrigin.startsWith('http://172.') || 
+        normalizedOrigin.startsWith('http://100.')
+      ) {
+        return callback(null, true);
+      }
+      const isAllowed = allowedOrigins.some(o => {
+        const normalizedO = o.replace(/\/$/, '');
+        return normalizedOrigin === normalizedO || normalizedOrigin.startsWith(normalizedO);
+      });
+      if (isAllowed) return callback(null, true);
+      return callback(new Error('CORS Not allowed for WebSockets'));
+    },
+    credentials: true
+  }
+});
+
+// Pass Socket.io to req middleware
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// Socket connection handling
+io.on('connection', (socket) => {
+  console.log(`[WEBSOCKET] Client connected: ${socket.id}`);
+  
+  socket.on('disconnect', () => {
+    console.log(`[WEBSOCKET] Client disconnected: ${socket.id}`);
+  });
+});
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
-
-    // Normalize origin by removing trailing slash for comparison
     const normalizedOrigin = origin.replace(/\/$/, '');
-
-    // Allow any localhost port during development
     if (normalizedOrigin.startsWith('http://localhost:')) return callback(null, true);
-
-    // Allow local network IPs for mobile testing
     if (
       normalizedOrigin.startsWith('http://192.168.') || 
       normalizedOrigin.startsWith('http://10.') || 
@@ -51,16 +88,11 @@ app.use(cors({
     ) {
       return callback(null, true);
     }
-
     const isAllowed = allowedOrigins.some(o => {
       const normalizedO = o.replace(/\/$/, '');
       return normalizedOrigin === normalizedO || normalizedOrigin.startsWith(normalizedO);
     });
-
-    if (isAllowed) {
-      return callback(null, true);
-    }
-    
+    if (isAllowed) return callback(null, true);
     console.log('CORS Blocked for origin:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
@@ -71,12 +103,11 @@ app.use(express.json());
 
 // Basic Route
 app.get('/', (req, res) => {
-  res.send('Evans Backend API is running...');
+  res.send('Evans Backend API is running with WebSockets enabled...');
 });
 
 // API Routes
 app.use('/api/products', (req, res, next) => {
-  // Cache response for 5 minutes (300 seconds) for faster loading on the user side
   if (req.method === 'GET' && !req.path.includes('/admin')) {
     res.set('Cache-Control', 'public, max-age=300');
   }
@@ -91,6 +122,6 @@ app.use('/api/settings', settingsRoutes);
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode with Socket.io on port ${PORT}`);
 });

@@ -69,6 +69,18 @@ router.post('/', protect, async (req, res) => {
 
     const createdOrder = await order.save();
 
+    // ── BROADCAST REAL-TIME WEBSOCKET EVENTS ──
+    if (req.io) {
+      req.io.emit('order_created', {
+        orderId: createdOrder._id,
+        totalAmount: createdOrder.totalAmount,
+        user: req.user.username
+      });
+      req.io.emit('stock_updated', {
+        deducted
+      });
+    }
+
     // ── SEND NOTIFICATIONS (Async, don't block the response) ──
     sendOrderEmail(createdOrder, req.user, 'customer');
     sendOrderEmail(createdOrder, req.user, 'admin');
