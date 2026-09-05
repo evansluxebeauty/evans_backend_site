@@ -59,28 +59,30 @@ export const protectAdmin = (req, res, next) => {
   }
 };
 
-// @desc    Update admin profile
+// @desc    Update admin profile & password
 // @route   PUT /api/auth/profile
 // @access  Private (Admin)
 router.put('/profile', protectAdmin, async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, currentPassword } = req.body;
   
   try {
-    const admin = await Admin.findOne({}); // Since there is only one master admin
-    if (admin) {
-      admin.email = email || admin.email;
-      if (password) {
-        admin.password = password; // In production, we would hash this
-      }
-      const updatedAdmin = await admin.save();
-      res.json({
-        _id: updatedAdmin._id,
-        email: updatedAdmin.email,
-        message: 'Profile updated successfully'
-      });
+    let admin = await Admin.findOne({});
+    if (!admin) {
+      admin = new Admin({ email: email || 'admin@evansluxe.com', password: password || 'admin123' });
     } else {
-      res.status(404).json({ message: 'Admin not found' });
+      if (password && currentPassword && admin.password !== currentPassword) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+      if (email) admin.email = email;
+      if (password) admin.password = password;
     }
+
+    const updatedAdmin = await admin.save();
+    res.json({
+      _id: updatedAdmin._id,
+      email: updatedAdmin.email,
+      message: 'Security settings updated successfully'
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
